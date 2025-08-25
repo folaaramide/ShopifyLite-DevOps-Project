@@ -1,113 +1,211 @@
-# Deploy & Manage ShopifyLite (Amazon-like Shopping Website) using DevOps Tools
+# Project: Deploy & Manage Amazon-like Shopping Website using DevOps Tools (Terraform, Jenkins CI/CD, SonarQube, Docker & Trivy on AWS Cloud).
 
-**Terraform, Jenkins (CI/CD), SonarQube, Docker & Trivy on AWS Cloud**
+## Scenario: ShopifyLite, a startup building an Amazon-clone shopping platform, asked me to set up a fully automated infrastructure and deployment pipeline.
 
-## Scenario
+Developers built the application (React + Node.js) and handed me the code.
 
-ShopifyLite is a startup building an Amazon-clone eCommerce platform.
+I (DevOps Engineer) provisioned the infrastructure using Terraform and created a Jenkins pipeline for CI/CD with automated security and quality scans.
 
-Developers focused on coding the shopping application (frontend + backend).
+## Step 1: Launched & Configured AWS EC2 Instance
 
-My role as a DevOps Engineer was to automate infrastructure provisioning and set up a robust CI/CD pipeline to ensure:
+Created an EC2 instance (Ubuntu 22.04, t2.micro) for DevOps setup.
 
-Fast deployments
+Configured key pair & security group (allowed HTTP, HTTPS, SSH).
 
-Automated code quality & security scans
+Verified instance running (2/2 status checks).
 
-Reliable infrastructure on AWS
+**Commands:**
 
-## Tech Stack
+sudo su
 
-Infrastructure as Code (IaC): Terraform
+apt update -y
 
-CI/CD: Jenkins Pipeline (Jenkinsfile)
+## Step 2: Install Terraform & AWS CLI
 
-Code Quality: SonarQube
+Installed Terraform to manage infra as code, and AWS CLI to interact with AWS programmatically.
 
-Security Scanning: Trivy & OWASP Dependency Check
+# Install Terraform
+sudo apt install wget -y
 
-Containerization: Docker
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-Cloud Provider: AWS (EC2, Security Groups, IAM, VPC)
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-## Project Workflow
+sudo apt update && sudo apt install terraform -y
 
-Developers push code → GitHub repository (ShopifyLite app).
+# Installed AWS CLI
+sudo apt -y install unzip curl
 
-Jenkins pipeline (Jenkinsfile):
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 
-Pulls code from GitHub
+unzip awscliv2.zip
 
-Runs SonarQube scan
+sudo ./aws/install
 
-Runs Trivy scan on Docker image
+aws --version
 
-Builds and pushes Docker image to DockerHub
+## Step 3: Configure IAM User & AWS Credentials
 
-Deploys app to EC2 (via Terraform-provisioned infra).
+Created IAM user in AWS with AdministratorAccess.
 
-Users access the app → live on AWS (port 3000).
+Downloaded credentials .csv.
 
-## Project Structure
-terraform/       # Terraform configs for AWS infra
-jenkins/         # Jenkins pipeline (CI/CD)
-app/             # (Optional) ShopifyLite application source code
-screenshots/     # Proof of deployment & results
+Configured AWS CLI:
 
-## Terraform Setup (terraform/)
+aws configure
 
-provider.tf → AWS provider config
+# Enter Access Key, Secret Key, region (e.g. us-east-1)
 
-main.tf → EC2 instance, Security Groups, User Data (install Jenkins, Docker, SonarQube, Trivy)
+## Step 4: Project Setup & Cloning Application Code
 
-variables.tf → AMI ID, instance type, key pair
+Created workspace directory ShopifyLite.
 
-outputs.tf → Public IP of app
+Cloned developers’ source code from GitHub (Amazon-clone app).
 
-## CI/CD Pipeline (jenkins/Jenkinsfile)
+Set up separate folders:
 
-**Pipeline stages:**
+/terraform → Infra as Code
 
-Checkout Code from GitHub
+/jenkins → Pipeline
 
-SonarQube Analysis
+/app → Application source
 
-Trivy Scan (Docker image vulnerabilities)
+## Step 5: Built Infrastructure with Terraform
 
-Build & Push Docker Image → DockerHub
+Inside terraform/, created:
 
-Deploy App to AWS EC2
+provider.tf
+provider "aws" {
+  region = "us-east-1"
+}
 
-## Results & Screenshots
+main.tf
+resource "aws_instance" "shopifylite" {
+  ami           = "ami-0e001c9271cf7f3b9"   # Ubuntu 22.04 AMI
+  instance_type = "t2.micro"
+  key_name      = "my-keypair"
 
--Terraform successfully provisioned EC2 & infra
+  security_groups = ["allow_http_https_ssh"]
 
--Jenkins pipeline executed CI/CD
+  user_data = file("install_jenkins.sh")
 
--SonarQube & Trivy scans completed
+  tags = {
+    Name = "ShopifyLite-EC2"
+  }
+}
 
--App deployed on http://<EC2-PUBLIC-IP>:3000
+variables.tf
+variable "region" {
+  default = "us-east-1"
+}
 
-(Screenshots in /screenshots folder)
+outputs.tf
+output "instance_ip" {
+  value = aws_instance.shopifylite.public_ip
+}
 
-### Application Source Code:
+Initialize & Apply Terraform
+terraform init
+terraform plan
+terraform apply --auto-approve
 
-Developers provided the ShopifyLite Amazon-clone app source code.
+### Output: EC2 instance running with Jenkins, Docker, SonarQube, Trivy pre-installed.
 
-Original codebase: Amazon Clone App Repo
+## Step 6: Set Up Jenkins
 
-### My work: DevOps automation (Terraform + Jenkins)
+Access Jenkins at: http://<EC2-PUBLIC-IP>:8080.
+
+Retrieved initial admin password:
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+**Installed required plugins:**
+1. SonarQube Scanner
+2. Docker Pipeline
+3. NodeJS
+4. OWASP Dependency Check
+5. Prometheus
+
+## Step 7: Configure Jenkins CI/CD Pipeline
+Jenkinsfile (jenkins/Jenkinsfile)
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_USER = credentials('dockerhub-cred')
+        SONARQUBE = credentials('sonarqube-token')
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/<your-org>/ShopifyLite-App.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                sh 'sonar-scanner'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $DOCKERHUB_USER/shopifylite:latest .'
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh 'trivy image $DOCKERHUB_USER/shopifylite:latest'
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                sh 'docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS'
+                sh 'docker push $DOCKERHUB_USER/shopifylite:latest'
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                sh 'docker run -d -p 3000:3000 $DOCKERHUB_USER/shopifylite:latest'
+            }
+        }
+    }
+}
+
+## Step 8: Configure SonarQube & DockerHub
+
+Created SonarQube token and added to Jenkins credentials.
+
+Added DockerHub credentials to Jenkins.
+
+Configured SonarQube server under Jenkins global settings.
+
+## Step 9: Results & Proof
+
+Terraform deployed infra
+
+Jenkins pipeline automated build & deploy
+
+SonarQube reports generated
+
+Trivy scanned Docker image 
+
+App live at http://<EC2-PUBLIC-IP>:3000 
 
 ## Conclusion
 
-This project demonstrates how I automated the deployment pipeline for a startup application:
+This project demonstrated end-to-end DevOps automation for ShopifyLite:
 
-Infrastructure with Terraform
+IaC with Terraform (AWS infra)
 
-CI/CD with Jenkins
+CI/CD with Jenkins (automated build, scan, deploy)
 
-Quality & Security checks with SonarQube + Trivy
+Code Quality & Security (SonarQube, Trivy, OWASP)
 
-Containerized app delivery with DockerHub + AWS EC2
+Dockerized Deployment on AWS EC2
 
-The result: ShopifyLite can release features faster, with confidence in code quality and security.
+The result: ShopifyLite now has a production-ready pipeline with faster releases, higher code quality, and secure deployments.
