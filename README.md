@@ -60,7 +60,7 @@ aws configure
 
 Created workspace directory ShopifyLite.
 
-Cloned developers’ source code from GitHub (Amazon-clone app).
+Cloned developers’ source code from GitHub ([Amazon-clone app](https://github.com/k21academyuk/Amazon-app-Deployment-using-terraform-and-jenkins.git)).
 
 Set up separate folders:
 
