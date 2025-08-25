@@ -71,7 +71,7 @@ Set up separate folders:
 /app → Application source
 
 ## Step 5: Built Infrastructure with Terraform
-Inside, [terraform/](./terraform), I created [main.tf](./terraform/main.tf), and[provider.tf](./terraform/provider.tf)
+Inside, [terraform/](./terraform), I created [main.tf](./terraform/main.tf), and [provider.tf](./terraform/provider.tf)
 
 Initialized & Applied Terraform
 1. terraform init
@@ -82,7 +82,7 @@ Initialized & Applied Terraform
 ![Screenshot](screenshots/terraform-apply.png)
 ## Step 6: Set Up Jenkins
 
-Accessed Jenkins at: http://<EC2-PUBLIC-IP>:8080.
+Accessed Jenkins at: http://<13.218.167.121>:3000>:8080.
 
 Retrieved initial admin password:
 
@@ -96,7 +96,7 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 5. Prometheus
 ![Screenshot](screenshots/jenkins-console.png)
 ## Step 7: Configured Jenkins CI/CD Pipeline  
-  - [Pipeline](./jenkins/Pipeline) 
+  - [Pipeline](./jenkins/pipeline) 
 ## Step 8: Configured SonarQube & DockerHub
 
 Created SonarQube token and added to Jenkins credentials.
