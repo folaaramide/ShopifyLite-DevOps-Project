@@ -82,7 +82,7 @@ Initialized & Applied Terraform
 ![Screenshot](screenshots/terraform-apply.png)
 ## Step 6: Set Up Jenkins
 
-Accessed Jenkins at: http://<13.218.167.121>:3000>:8080.
+Accessed Jenkins at: http://13.218.167.121:8080.
 
 Retrieved initial admin password:
 
@@ -115,7 +115,7 @@ SonarQube reports generated
 ![Screenshot](screenshots/sonarqube-analysis.png)
 Trivy scanned Docker image 
 
-App live at http://<13.218.167.121>:3000 
+App live at http://13.218.167.121:3000 
 ![Screenshot](screenshots/deployed-web-app.png)
 ## Conclusion
 
